@@ -4,18 +4,15 @@ import { useState, useRef } from 'react';
 export default function GyoSystem() {
   const [loading, setLoading] = useState(false);
   const [logs, setLogs] = useState(["SYSTEM READY. WAITING FOR BATCH INPUT..."]);
-  const [imageFiles, setImageFiles] = useState([]);
+  const [imageFiles, setImageFiles] = useState([]); 
   
-  // --- 音效系统 ---
   const audioCtxRef = useRef(null);
   const initAudio = () => {
     if (!audioCtxRef.current) {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       audioCtxRef.current = new AudioContext();
     }
-    if (audioCtxRef.current.state === 'suspended') {
-      audioCtxRef.current.resume();
-    }
+    if (audioCtxRef.current.state === 'suspended') audioCtxRef.current.resume();
   };
 
   const playTone = (freq, type, duration) => {
@@ -65,16 +62,20 @@ export default function GyoSystem() {
       
       log(`${prefix} CLOUD SECURED.`);
 
+      // AI 分析
       SFX.processing();
       const aiRes = await fetch('/api/analyze', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ imageUrl: url })
       });
       const aiData = await aiRes.json();
-      if (!aiRes.ok) throw new Error("AI Analysis Failed");
+      
+      // 如果后端返回错误，抛出异常
+      if (!aiRes.ok) throw new Error(aiData.error || "AI Analysis Failed");
       
       log(`${prefix} AI TITLE: "${aiData.title}"`);
 
+      // 存 Notion
       const notionRes = await fetch('/api/notion', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...aiData, imageUrl: url, assetId: id })
@@ -102,9 +103,11 @@ export default function GyoSystem() {
 
     for (let i = 0; i < imageFiles.length; i++) {
       await processOneFile(imageFiles[i], i, imageFiles.length);
+      
+      // ✅ 关键修改：增加到 4 秒冷却时间，防止 Google 报错
       if (i < imageFiles.length - 1) {
-        log("COOLING DOWN (2s)...");
-        await delay(2000); 
+        log("COOLING DOWN (4s)...");
+        await delay(4000); 
       }
     }
 
@@ -115,9 +118,7 @@ export default function GyoSystem() {
 
   return (
     <div className="container" onClick={initAudio}>
-      {/* ✅ 加回来了：CRT 效果层 */}
       <div className="crt-overlay"></div>
-      
       <div className="header"><h1>GYO 作品アップロード端末</h1></div>
       
       <div className="quote-box" id="console">
@@ -143,7 +144,7 @@ export default function GyoSystem() {
         {loading ? "EXECUTING BATCH..." : "[ INITIATE BATCH UPLOAD ]"}
       </button>
 
-      <div className="footer">GYO CORP. v2.3 // CRT ONLINE</div>
+      <div className="footer">GYO CORP. v2.4 // SAFETY UNLOCKED</div>
     </div>
   );
 }
