@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-// 引入安全设置相关的常量
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 
 export async function POST(request) {
@@ -10,17 +9,16 @@ export async function POST(request) {
 
     const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
     
-    // ✅ 关键修复：把所有安全过滤都关掉 (BLOCK_NONE)
-    const safetySettings = [
-      { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-      { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-      { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
-      { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-    ];
-
+    // ✅ 关键修改：使用 Gemini 2.0 Flash Lite 预览版
+    // 如果这个名字报错，请尝试 "gemini-2.0-flash-exp"
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash", // 或者 gemini-2.0-flash-lite-preview-02-05
-      safetySettings: safetySettings, // 注入安全设置
+      model: "gemini-2.0-flash-lite-preview-02-05", 
+      safetySettings: [
+        { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+        { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+        { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+        { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+      ],
       generationConfig: { responseMimeType: "application/json" } 
     });
 
@@ -61,7 +59,7 @@ export async function POST(request) {
 
   } catch (error) {
     console.error("Gemini Error:", error);
-    // 把具体错误打印出来，如果是 Safety 原因，这里会显示
-    return NextResponse.json({ error: error.message || "Safety Block" }, { status: 500 });
+    // 返回详细错误信息，方便排查
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
