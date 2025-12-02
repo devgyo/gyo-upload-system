@@ -1,9 +1,8 @@
 :root {
   --phosphor-main: #33ff33;
-  --phosphor-alert: #ff3333;
-  --phosphor-dim: #1a801a;
   --bg-color: #050805;
   --scan-strength: 0.3;
+  /* 自定义光标 */
   --cursor-style: url("data:image/svg+xml;utf8,<svg width='12' height='20' viewBox='0 0 12 20' xmlns='http://www.w3.org/2000/svg'><rect x='0' y='0' width='10' height='18' fill='%2333ff33' stroke='none'/></svg>") 0 0, auto;
 }
 
@@ -11,64 +10,122 @@ body {
   margin: 0;
   background-color: var(--bg-color);
   color: var(--phosphor-main);
-  font-family: "IBM Plex Mono", "Zen Kaku Gothic New", sans-serif;
-  overflow-x: hidden;
-  min-height: 100vh;
+  font-family: "IBM Plex Mono", "Zen Kaku Gothic New", monospace;
   padding: 30px;
   box-sizing: border-box;
-  text-shadow: 0 0 1px var(--phosphor-dim);
+  text-shadow: 0 0 1px #1a801a;
   cursor: var(--cursor-style);
+  overflow-x: hidden;
+  min-height: 100vh;
 }
 
-/* CRT 扫描线 */
+/* ✅ CRT 扫描线效果 (加回来了) */
 .crt-overlay {
-  position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 900;
-  background: linear-gradient(to bottom, rgba(0,0,0,0) 50%, rgba(0,0,0,var(--scan-strength)) 50%);
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 900;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 50%,
+    rgba(0, 0, 0, var(--scan-strength)) 50%
+  );
   background-size: 100% 4px;
 }
 
 .container {
-  max-width: 720px; /* ✅ 宽度固定 */
-  margin: 0 auto; position: relative; z-index: 1;
+  max-width: 720px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
 }
 
 .header h1 {
-  text-align: center; font-size: 24px; letter-spacing: 2px;
-  border-bottom: 2px solid var(--phosphor-dim); padding-bottom: 10px; margin-bottom: 30px;
+  text-align: center;
+  font-size: 24px;
+  letter-spacing: 2px;
+  border-bottom: 2px solid #1a801a;
+  padding-bottom: 10px;
+  margin-bottom: 30px;
 }
 
 /* 日志框 */
 .quote-box {
-  margin: 20px 0; padding: 15px; border: 1px dashed var(--phosphor-dim);
-  font-size: 13px; opacity: 0.9; background: rgba(5, 8, 5, 0.8); min-height: 60px;
+  border: 1px dashed #1a801a;
+  padding: 15px;
+  margin: 20px 0;
+  background: rgba(5, 8, 5, 0.9);
+  min-height: 80px;
+  font-size: 13px;
 }
-.log-item { border-bottom: 1px solid rgba(26, 128, 26, 0.3); padding: 5px 0; font-size: 12px; }
-.log-item:last-child { color: #fff; }
+.log-item {
+  border-bottom: 1px solid rgba(26, 128, 26, 0.3);
+  padding: 5px 0;
+}
+.log-item:last-child {
+  color: #fff;
+  text-shadow: 0 0 5px #33ff33;
+}
 
-/* 输入组 */
-.input-group { margin-bottom: 30px; }
-.label-text { display: block; font-size: 12px; opacity: 0.7; margin-bottom: 8px; font-weight: bold; }
+/* 文件上传按钮 */
+.file-upload-wrapper {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #1a801a;
+  padding: 15px;
+  text-align: center;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.file-upload-wrapper:hover {
+  background: rgba(51, 255, 51, 0.1);
+  border-color: #33ff33;
+}
+.file-upload-wrapper.active {
+  background: rgba(51, 255, 51, 0.2);
+  color: #fff;
+}
+.file-upload-wrapper input[type=file] {
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
 
 /* 按钮 */
 .action-btn {
-  width: 100%; padding: 15px;
-  background: var(--phosphor-main); /* ✅ 实心绿 */
-  border: 2px solid var(--phosphor-main);
-  color: #000; font-family: inherit; font-size: 16px; font-weight: bold;
-  cursor: pointer; text-transform: uppercase; transition: 0.2s;
+  width: 100%;
+  padding: 15px;
+  margin-top: 20px;
+  background: #33ff33; /* 实心绿 */
+  color: #000;
+  border: 2px solid #33ff33;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 16px;
+  text-transform: uppercase;
+  transition: 0.2s;
 }
 .action-btn:hover:not(:disabled) {
-  background: transparent; color: var(--phosphor-main); box-shadow: 0 0 20px var(--phosphor-dim);
+  background: transparent;
+  color: #33ff33;
+  box-shadow: 0 0 15px #1a801a;
 }
-.action-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-
-/* 文件上传 */
-.file-upload-wrapper { position: relative; overflow: hidden; display: inline-block; width: 100%; }
-.file-upload-wrapper input[type=file] { font-size: 100px; position: absolute; left: 0; top: 0; opacity: 0; cursor: pointer; }
-.file-btn {
-  border: 1px solid var(--phosphor-dim); padding: 15px; text-align: center; display: block; transition: 0.2s; cursor: pointer; box-sizing: border-box;
+.action-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
 }
-.file-btn:hover { border-color: var(--phosphor-main); background: rgba(51, 255, 51, 0.1); }
-.file-btn.active { background: rgba(51, 255, 51, 0.2); color: #fff; border-color: var(--phosphor-main); }
 
-.footer { position: fixed; bottom: 20px; right: 30px; font-size: 10px; opacity: 0.5; }
+.footer {
+  position: fixed;
+  bottom: 20px;
+  right: 30px;
+  font-size: 10px;
+  opacity: 0.5;
+}

@@ -4,7 +4,7 @@ import { useState, useRef } from 'react';
 export default function GyoSystem() {
   const [loading, setLoading] = useState(false);
   const [logs, setLogs] = useState(["SYSTEM READY. WAITING FOR BATCH INPUT..."]);
-  const [imageFiles, setImageFiles] = useState([]); // 改为数组存储多张图
+  const [imageFiles, setImageFiles] = useState([]);
   
   // --- 音效系统 ---
   const audioCtxRef = useRef(null);
@@ -47,15 +47,12 @@ export default function GyoSystem() {
   const delay = (ms) => new Promise(res => setTimeout(res, ms));
 
   // --- 核心业务 ---
-
-  // 单张处理函数
   const processOneFile = async (file, index, total) => {
     const prefix = `[ ${index + 1}/${total} ]`;
     try {
       SFX.next();
       log(`${prefix} UPLOADING: ${file.name}...`);
 
-      // 1. 传图床
       const formData = new FormData();
       formData.append('file', file);
       formData.append('upload_preset', process.env.NEXT_PUBLIC_UPLOAD_PRESET);
@@ -68,7 +65,6 @@ export default function GyoSystem() {
       
       log(`${prefix} CLOUD SECURED.`);
 
-      // 2. 问 Gemini (AI)
       SFX.processing();
       const aiRes = await fetch('/api/analyze', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -79,7 +75,6 @@ export default function GyoSystem() {
       
       log(`${prefix} AI TITLE: "${aiData.title}"`);
 
-      // 3. 存 Notion (+ 触发 Telegram)
       const notionRes = await fetch('/api/notion', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...aiData, imageUrl: url, assetId: id })
@@ -96,7 +91,6 @@ export default function GyoSystem() {
     }
   };
 
-  // 批量主流程
   const handleBatchStart = async () => {
     initAudio();
     if (imageFiles.length === 0) { SFX.error(); return alert("ERROR: NO FILES SELECTED"); }
@@ -106,11 +100,8 @@ export default function GyoSystem() {
     setLogs([]); 
     log(`INITIALIZING BATCH SEQUENCE (${imageFiles.length} FILES)...`);
 
-    // 循环队列
     for (let i = 0; i < imageFiles.length; i++) {
       await processOneFile(imageFiles[i], i, imageFiles.length);
-      
-      // 每张间隔 2 秒，防止接口报错
       if (i < imageFiles.length - 1) {
         log("COOLING DOWN (2s)...");
         await delay(2000); 
@@ -124,6 +115,9 @@ export default function GyoSystem() {
 
   return (
     <div className="container" onClick={initAudio}>
+      {/* ✅ 加回来了：CRT 效果层 */}
+      <div className="crt-overlay"></div>
+      
       <div className="header"><h1>GYO 作品アップロード端末</h1></div>
       
       <div className="quote-box" id="console">
@@ -133,11 +127,8 @@ export default function GyoSystem() {
 
       <div style={{ marginBottom: 30 }}>
         <span style={{fontSize:12, fontWeight:'bold', opacity:0.7, display:'block', marginBottom:8}}>SOURCE IMAGES (MULTI-SELECT):</span>
-        <div className="file-upload-wrapper">
-          <div className={`file-btn ${imageFiles.length > 0 ? 'active' : ''}`}>
-             {imageFiles.length > 0 ? `[ ${imageFiles.length} FILES SELECTED ]` : "[ SELECT FILES (SHIFT+CLICK) ]"}
-          </div>
-          {/* ✅ 开启多选 */}
+        <div className={`file-upload-wrapper ${imageFiles.length > 0 ? 'active' : ''}`}>
+          {imageFiles.length > 0 ? `[ ${imageFiles.length} FILES SELECTED ]` : "[ SELECT FILES (SHIFT+CLICK) ]"}
           <input 
             type="file" accept="image/*" multiple 
             onChange={e => {
@@ -152,7 +143,7 @@ export default function GyoSystem() {
         {loading ? "EXECUTING BATCH..." : "[ INITIATE BATCH UPLOAD ]"}
       </button>
 
-      <div className="footer">GYO CORP. v2.2 // BATCH & TG ENABLED</div>
+      <div className="footer">GYO CORP. v2.3 // CRT ONLINE</div>
     </div>
   );
 }
