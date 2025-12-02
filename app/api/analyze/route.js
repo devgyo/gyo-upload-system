@@ -9,10 +9,11 @@ export async function POST(request) {
 
     const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
     
-    // ✅ 修复：使用目前最稳定的正式版 gemini-1.5-flash
-    // 只有这个版本的免费额度(15 RPM)能支撑你的批量上传
+    // ✅ 修正：使用 'gemini-2.0-flash'
+    // 这是目前的正式稳定版 (Stable)，接替了 1.5 Flash 的位置
+    // 如果这个还报错，唯一的备选是 'gemini-2.0-flash-exp'
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash", 
+      model: "gemini-2.0-flash", 
       safetySettings: [
         { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
         { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
