@@ -3,10 +3,9 @@ import { useState, useRef } from 'react';
 
 export default function GyoSystem() {
   const [loading, setLoading] = useState(false);
-  const [logs, setLogs] = useState(["SYSTEM READY. WAITING FOR SOURCE..."]);
-  const [imageFile, setImageFile] = useState(null);
-  const [uploadedData, setUploadedData] = useState(null);
-
+  const [logs, setLogs] = useState(["SYSTEM READY. WAITING FOR BATCH INPUT..."]);
+  const [imageFiles, setImageFiles] = useState([]); // 改为数组存储多张图
+  
   // --- 音效系统 ---
   const audioCtxRef = useRef(null);
   const initAudio = () => {
@@ -40,132 +39,120 @@ export default function GyoSystem() {
     error: () => {
       playTone(150, "sawtooth", 0.3);
       setTimeout(() => playTone(100, "sawtooth", 0.3), 300);
-    }
+    },
+    next: () => playTone(600, "triangle", 0.1)
   };
 
   const log = (msg) => setLogs(prev => [...prev, `> ${msg}`]);
+  const delay = (ms) => new Promise(res => setTimeout(res, ms));
 
-  // --- 业务逻辑 ---
+  // --- 核心业务 ---
 
-  // 1. 上传 Cloudinary
-  const performUpload = async () => {
-    if (!imageFile) throw new Error("NO IMAGE DETECTED");
-    if (uploadedData) return uploadedData; 
-
-    const formData = new FormData();
-    formData.append('file', imageFile);
-    formData.append('upload_preset', process.env.NEXT_PUBLIC_UPLOAD_PRESET);
-    const cloudName = process.env.NEXT_PUBLIC_CLOUD_NAME;
-
-    const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-      method: 'POST', body: formData
-    });
-    if (!res.ok) throw new Error("CLOUD UPLOAD FAILED");
-    const data = await res.json();
-
-    const result = { url: data.secure_url, id: data.asset_id };
-    setUploadedData(result);
-    return result;
-  };
-
-  // 2. 调用 Gemini 分析
-  const performAnalysis = async (imageUrl) => {
-    const res = await fetch('/api/analyze', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ imageUrl })
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "AI ANALYSIS FAILED");
-    return data;
-  };
-
-  // 3. 一键全自动流程
-  const handleStart = async () => {
-    initAudio();
-    if (!imageFile) { SFX.error(); return alert("ERROR: NO IMAGE"); }
-
-    setLoading(true);
-    SFX.click();
-    setLogs([]); // 清屏
-    log("INITIALIZING AUTO-UPLOAD SEQUENCE...");
-
+  // 单张处理函数
+  const processOneFile = async (file, index, total) => {
+    const prefix = `[ ${index + 1}/${total} ]`;
     try {
-      // --- 阶段 A: 传图 ---
-      log("UPLOADING SOURCE IMAGE...");
-      const { url, id } = await performUpload();
-      log(`ASSET SECURED: ${id}`);
+      SFX.next();
+      log(`${prefix} UPLOADING: ${file.name}...`);
 
-      // --- 阶段 B: AI 分析 ---
-      log("AWAITING NEURAL UPLINK (GEMINI FLASH)...");
+      // 1. 传图床
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', process.env.NEXT_PUBLIC_UPLOAD_PRESET);
+      const cloudName = process.env.NEXT_PUBLIC_CLOUD_NAME;
+      
+      const cloudRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { method: 'POST', body: formData });
+      if (!cloudRes.ok) throw new Error("Cloud Upload Failed");
+      const cloudData = await cloudRes.json();
+      const { secure_url: url, asset_id: id } = cloudData;
+      
+      log(`${prefix} CLOUD SECURED.`);
+
+      // 2. 问 Gemini (AI)
       SFX.processing();
+      const aiRes = await fetch('/api/analyze', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl: url })
+      });
+      const aiData = await aiRes.json();
+      if (!aiRes.ok) throw new Error("AI Analysis Failed");
+      
+      log(`${prefix} AI TITLE: "${aiData.title}"`);
 
-      const aiData = await performAnalysis(url);
-
-      // 在日志里秀一下 AI 生成的标题
-      log(`GENERATED TITLE: "${aiData.title}"`);
-
-      // --- 阶段 C: 写入 Notion ---
-      log("TRANSMITTING TO NOTION DB...");
-      const res = await fetch('/api/notion', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      // 3. 存 Notion (+ 触发 Telegram)
+      const notionRes = await fetch('/api/notion', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...aiData, imageUrl: url, assetId: id })
       });
-
-      if (!res.ok) throw new Error("DB WRITE FAILED");
+      if (!notionRes.ok) throw new Error("Notion Write Failed");
 
       SFX.success();
-      log("MISSION COMPLETE. DATA SYNCED.");
+      log(`${prefix} SYNC COMPLETE (TG SENT). ✅`);
 
     } catch (err) {
       console.error(err);
       SFX.error();
-      log(`CRITICAL ERROR: ${err.message}`);
-    } finally {
-      setLoading(false);
+      log(`${prefix} ERROR: ${err.message} ❌`);
     }
+  };
+
+  // 批量主流程
+  const handleBatchStart = async () => {
+    initAudio();
+    if (imageFiles.length === 0) { SFX.error(); return alert("ERROR: NO FILES SELECTED"); }
+    
+    setLoading(true);
+    SFX.click();
+    setLogs([]); 
+    log(`INITIALIZING BATCH SEQUENCE (${imageFiles.length} FILES)...`);
+
+    // 循环队列
+    for (let i = 0; i < imageFiles.length; i++) {
+      await processOneFile(imageFiles[i], i, imageFiles.length);
+      
+      // 每张间隔 2 秒，防止接口报错
+      if (i < imageFiles.length - 1) {
+        log("COOLING DOWN (2s)...");
+        await delay(2000); 
+      }
+    }
+
+    SFX.success();
+    log("ALL TASKS COMPLETED. SYSTEM STANDBY.");
+    setLoading(false);
   };
 
   return (
     <div className="container" onClick={initAudio}>
-      <div className="crt-overlay"></div>
-
-      <div className="header">
-        {/* ✅ 日文标题 */}
-        <h1>GYO 作品アップロード端末</h1>
-      </div>
-
+      <div className="header"><h1>GYO 作品アップロード端末</h1></div>
+      
       <div className="quote-box" id="console">
-         {logs.map((l, i) => (
-           <div key={i} className="log-item">{l}</div>
-         ))}
-         {loading && <div className="log-item blink">PROCESSING DATA STREAM...</div>}
+         {logs.map((l, i) => <div key={i} className="log-item">{l}</div>)}
+         {loading && <div className="log-item blink">BATCH PROCESSING ACTIVE...</div>}
       </div>
 
-      <div className="input-group">
-        <span className="label-text">SOURCE IMAGE:</span>
+      <div style={{ marginBottom: 30 }}>
+        <span style={{fontSize:12, fontWeight:'bold', opacity:0.7, display:'block', marginBottom:8}}>SOURCE IMAGES (MULTI-SELECT):</span>
         <div className="file-upload-wrapper">
-          <div className={`file-btn ${imageFile ? 'active' : ''}`}>
-            {/* ✅ 选中后显示日文 */}
-            {imageFile ? "[ 画像が選択されました！ ]" : "[ SELECT FILE TO UPLOAD ]"}
+          <div className={`file-btn ${imageFiles.length > 0 ? 'active' : ''}`}>
+             {imageFiles.length > 0 ? `[ ${imageFiles.length} FILES SELECTED ]` : "[ SELECT FILES (SHIFT+CLICK) ]"}
           </div>
+          {/* ✅ 开启多选 */}
           <input 
-            type="file" accept="image/*" 
+            type="file" accept="image/*" multiple 
             onChange={e => {
               SFX.click();
-              setImageFile(e.target.files[0]);
-              setUploadedData(null); 
+              setImageFiles(Array.from(e.target.files));
             }} 
           />
         </div>
       </div>
 
-      <button className="action-btn" onClick={handleStart} disabled={loading}>
-        {loading ? "EXECUTING..." : "[ INITIATE AUTO-UPLOAD ]"}
+      <button className="action-btn" onClick={handleBatchStart} disabled={loading}>
+        {loading ? "EXECUTING BATCH..." : "[ INITIATE BATCH UPLOAD ]"}
       </button>
 
-      <div className="footer">GYO CORP. v2.0 // ONLINE</div>
+      <div className="footer">GYO CORP. v2.2 // BATCH & TG ENABLED</div>
     </div>
   );
 }
