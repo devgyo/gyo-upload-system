@@ -9,10 +9,10 @@ export async function POST(request) {
 
     const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
     
-    // ✅ 关键修改：使用 Gemini 2.0 Flash Lite 预览版
-    // 如果这个名字报错，请尝试 "gemini-2.0-flash-exp"
+    // ✅ 修复：使用目前最稳定的正式版 gemini-1.5-flash
+    // 只有这个版本的免费额度(15 RPM)能支撑你的批量上传
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-2.0-flash-lite-preview-02-05", 
+      model: "gemini-1.5-flash", 
       safetySettings: [
         { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
         { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
@@ -59,7 +59,6 @@ export async function POST(request) {
 
   } catch (error) {
     console.error("Gemini Error:", error);
-    // 返回详细错误信息，方便排查
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
