@@ -122,6 +122,32 @@ body {
   cursor: not-allowed;
 }
 
+.ghost-btn {
+  width: 100%;
+  padding: 12px;
+  background: transparent;
+  color: #33ff33;
+  border: 1px solid #33ff33;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 14px;
+  text-transform: uppercase;
+  transition: 0.2s;
+}
+.ghost-btn:hover:not(:disabled) {
+  background: rgba(51, 255, 51, 0.15);
+  box-shadow: 0 0 12px rgba(51, 255, 51, 0.4);
+}
+.ghost-btn.active {
+  background: #33ff33;
+  color: #000;
+  box-shadow: 0 0 15px #1a801a;
+}
+.ghost-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
 .footer {
   position: fixed;
   bottom: 20px;
@@ -170,4 +196,191 @@ body {
   background: #33ff33;
   color: #000;
   box-shadow: 0 0 12px rgba(51, 255, 51, 0.6);
+}
+
+.log-panel .log-item {
+  white-space: nowrap;
+}
+
+.sovereign-popup {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 320px;
+  background: rgba(5, 8, 5, 0.95);
+  border: 1px solid #33ff33;
+  padding: 15px;
+  z-index: 9999;
+  box-shadow: 0 0 15px rgba(51, 255, 51, 0.3);
+.popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+.popup-close {
+  background: transparent;
+  border: 1px solid #33ff33;
+  color: #33ff33;
+  font-size: 14px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.popup-body input {
+  width: 100%;
+  box-sizing: border-box;
+  display: block;
+  background: rgba(5, 8, 5, 0.9);
+  border: 1px solid #1a801a;
+  color: #33ff33;
+  padding: 10px;
+  font-family: inherit;
+  margin-bottom: 10px;
+.popup-group {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.reminder-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.reminder-form input[type=text],
+.reminder-form input[type=time] {
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(5, 8, 5, 0.9);
+  border: 1px solid #1a801a;
+  color: #33ff33;
+  padding: 8px;
+  font-family: inherit;
+}
+
+.reminder-mode {
+  display: flex;
+  gap: 10px;
+}
+.mode-btn {
+  flex: 1;
+  background: transparent;
+  border: 1px solid #33ff33;
+  color: #33ff33;
+  padding: 8px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.mode-btn.active {
+  background: #33ff33;
+  color: #000;
+}
+
+.interval-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.reminder-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.lock-screen {
+  position: fixed;
+  inset: 0;
+  background: #020803;
+  color: #5eff5e;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco,
+    Consolas, "Liberation Mono", "Courier New", monospace;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.lock-panel {
+  border: 1px solid #1aff1a;
+  box-shadow: 0 0 20px rgba(0, 255, 0, 0.25);
+  padding: 32px 40px;
+  max-width: 480px;
+  width: 90%;
+  background: radial-gradient(circle at top left, #041608 0, #020803 55%);
+}
+
+.lock-title {
+  font-size: 18px;
+  letter-spacing: 0.2em;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.lock-subtitle {
+  font-size: 12px;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.lock-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.lock-label {
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lock-input {
+  background: #020803;
+  border: 1px solid #1aff1a;
+  color: #5eff5e;
+  padding: 8px 10px;
+  font-size: 14px;
+  outline: none;
+}
+
+.lock-input:focus {
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+}
+
+.lock-button {
+  margin-top: 4px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #1aff1a;
+  background: repeating-linear-gradient(
+    -45deg,
+    #19ff19,
+    #19ff19 2px,
+    #0fa80f 2px,
+    #0fa80f 4px
+  );
+  color: #021003;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+}
+
+.lock-hint {
+  margin-top: 12px;
+  font-size: 11px;
+  opacity: 0.75;
+}
+
+.lock-error {
+  margin-top: 6px;
+  font-size: 11px;
+  color: #ff4d4d;
 }

@@ -1,5 +1,6 @@
 import "./globals.css";
 import NavBar from "./NavBar";
+import SovereignGate from "./SovereignGate";
 
 export const metadata = {
   title: "GYO UPLOAD SYSTEM",
@@ -21,9 +22,11 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
       </head>
-      <body>
-        <NavBar />
-        {children}
+      <body className="gyo-body">
+        <SovereignGate>
+          <NavBar />
+          {children}
+        </SovereignGate>
       </body>
     </html>
   );

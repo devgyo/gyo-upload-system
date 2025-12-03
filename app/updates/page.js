@@ -1,7 +1,8 @@
 'use client';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import * as sfx from '../../lib/sfx';
-import { SovereignPage, SovereignSection, SovereignStatus } from '../SovereignUI';
+import { useCallback, useMemo, useState } from 'react';
+import { SovereignPage, SovereignSection, SovereignButton, SovereignLog } from '../SovereignUI';
+import { incrementUploadCount } from '../../lib/uploadStore';
+import { playSuccess, playError } from '@/lib/sfx';
 
 export default function UpdatesUploadTerminal() {
   const [loading, setLoading] = useState(false);
@@ -9,12 +10,8 @@ export default function UpdatesUploadTerminal() {
   const [imageFiles, setImageFiles] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
 
-  useEffect(() => {
-    sfx.open();
-  }, []);
-
   const log = useCallback((msg) => {
-    setLogs((prev) => [...prev, `> ${msg}`]);
+    setLogs((prev) => [...prev, msg]);
   }, []);
 
   const delay = (ms) => new Promise((res) => setTimeout(res, ms));
@@ -24,11 +21,15 @@ export default function UpdatesUploadTerminal() {
     return `[ ${imageFiles.length} FILES SELECTED ]`;
   }, [imageFiles.length]);
 
+  const logEntries = useMemo(
+    () => (loading ? [...logs, 'BATCH PROCESSING ACTIVE...'] : logs),
+    [logs, loading]
+  );
+
   const handleFiles = useCallback(
     (files) => {
       const fileList = Array.from(files).filter((f) => f.type.startsWith('image/'));
       if (fileList.length === 0) return;
-      sfx.type();
       setImageFiles(fileList);
       log(`INGESTED ${fileList.length} IMAGE FILE(S). READY FOR DEPLOYMENT.`);
     },
@@ -73,10 +74,11 @@ export default function UpdatesUploadTerminal() {
         });
         if (!notionRes.ok) throw new Error('Notion Write Failed');
 
-        sfx.success();
         log(`${prefix} SYNC COMPLETE (TG SENT). ✅`);
+        playSuccess();
       } catch (err) {
         console.error(err);
+        playError();
         log(`${prefix} ERROR: ${err.message} ❌`);
       }
     },
@@ -90,9 +92,8 @@ export default function UpdatesUploadTerminal() {
     }
 
     setLoading(true);
-    sfx.close();
-    setLogs([]);
-    log(`INITIALIZING BATCH SEQUENCE (${imageFiles.length} FILES)...`);
+    const initialMessage = `INITIALIZING BATCH SEQUENCE (${imageFiles.length} FILES)...`;
+    setLogs([initialMessage]);
 
     for (let i = 0; i < imageFiles.length; i++) {
       await processOneFile(imageFiles[i], i, imageFiles.length);
@@ -103,7 +104,7 @@ export default function UpdatesUploadTerminal() {
       }
     }
 
-    sfx.success();
+    incrementUploadCount(imageFiles.length);
     log('ALL TASKS COMPLETED. SYSTEM STANDBY.');
     setLoading(false);
   }, [imageFiles, log, processOneFile]);
@@ -126,29 +127,10 @@ export default function UpdatesUploadTerminal() {
     }
   };
 
-  const latestLog = logs[logs.length - 1];
-
   return (
     <SovereignPage moduleLabel="更新ログ">
       <div style={{ maxWidth: 840, margin: '0 auto' }}>
-        <SovereignStatus>
-          <div className="log-item">{loading ? 'SYSTEM STATUS: BATCH ACTIVE' : 'SYSTEM STATUS: STANDBY'}</div>
-          <div className="log-item">{`QUEUE: ${imageFiles.length} FILE(S)`}</div>
-          <div className="log-item">{latestLog}</div>
-        </SovereignStatus>
-
         <div style={{ marginTop: 10 }}>
-          <SovereignSection title="[ OPERATION LOG ]">
-            {logs.map((l, i) => (
-              <div key={i} className="log-item">
-                {l}
-              </div>
-            ))}
-            {loading && <div className="log-item blink">BATCH PROCESSING ACTIVE...</div>}
-          </SovereignSection>
-        </div>
-
-        <div style={{ marginTop: 20 }}>
           <SovereignSection title="[ BATCH CONTROL ]">
             <div style={{ marginBottom: 20 }}>
               <span style={{ fontSize: 12, fontWeight: 'bold', opacity: 0.7, display: 'block', marginBottom: 8 }}>
@@ -165,10 +147,14 @@ export default function UpdatesUploadTerminal() {
               </div>
             </div>
 
-            <button className="action-btn" onClick={handleBatchStart} disabled={loading}>
+            <SovereignButton variant="primary" onClick={handleBatchStart} disabled={loading}>
               {loading ? 'EXECUTING BATCH...' : '[ INITIATE BATCH UPLOAD ]'}
-            </button>
+            </SovereignButton>
           </SovereignSection>
+        </div>
+
+        <div style={{ marginTop: 20 }}>
+          <SovereignLog title="[ OPERATION LOG ]" entries={logEntries} />
         </div>
 
         <div className="footer">GYO CORP. v2.4 // SAFETY UNLOCKED</div>
