@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <meta name="theme-color" content="#050805" />
+    <title>GYO SYSTEM</title>
+    <link rel="manifest" href="manifest.json" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=Zen+Kaku+Gothic+New:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        --phosphor-main: #33ff33;
+        --phosphor-alert: #ff3333;
+        --phosphor-dim: #1a801a;
+        --bg-color: #050805;
+        --scan-strength: 0.3;
+        --font-size: 14px;
+        --cursor-style: url("data:image/svg+xml;utf8,<svg width='12' height='20' viewBox='0 0 12 20' xmlns='http://www.w3.org/2000/svg'><rect x='0' y='0' width='10' height='18' fill='%2333ff33' stroke='none'/></svg>")
+            0 0,
+          auto;
+        --titlebar-height: env(titlebar-area-height, 35px);
+      }
+
+      body {
+        margin: 0;
+        background-color: var(--bg-color);
+        color: var(--phosphor-main);
+        font-family: "IBM Plex Mono", "Zen Kaku Gothic New", sans-serif;
+        font-size: var(--font-size);
+        overflow-x: hidden;
+        min-height: 100vh;
+        padding-top: max(32px, var(--titlebar-height));
+        padding-left: 32px;
+        padding-right: 32px;
+        padding-bottom: 32px;
+        box-sizing: border-box;
+        display: block;
+        text-shadow: 0 0 1px var(--phosphor-dim);
+        cursor: var(--cursor-style);
+        user-select: none;
+      }
+
+      .window-drag-area {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: var(--titlebar-height);
+        z-index: 2000;
+        -webkit-app-region: drag;
+        app-region: drag;
+      }
+
+      button,
+      input,
+      .toggle-btn,
+      li,
+      .add-btn,
+      select,
+      option,
+      #console-wrapper {
+        -webkit-app-region: no-drag;
+        app-region: no-drag;
+        cursor: inherit !important;
+      }
+
+      .crt-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 900;
+        background: linear-gradient(
+          to bottom,
+          rgba(0, 0, 0, 0) 50%,
+          rgba(0, 0, 0, var(--scan-strength)) 50%
+        );
+        background-size: 100% 4px;
+      }
+
+      .container {
+        width: 100%;
+        max-width: 800px;
+        margin: 0 auto;
+        padding-bottom: 60px;
+        z-index: 1;
+        position: relative;
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      .header h1 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 700;
+        letter-spacing: 1px;
+      }
+
+      .quote-box {
+        margin: 20px 0;
+        padding: 15px;
+        border: 1px dashed var(--phosphor-dim);
+        font-size: 14px;
+        opacity: 0.9;
+        text-align: center;
+      }
+
+      #console-wrapper {
+        display: none;
+        position: fixed;
+        bottom: 60px;
+        right: 32px;
+        width: 400px;
+        max-width: 90vw;
+        padding: 25px;
+        z-index: 500;
+        border: 2px solid var(--phosphor-main);
+        background: #050805;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.9), 0 0 15px rgba(51, 255, 51, 0.2);
+        transform-origin: bottom right;
+      }
+      #console-wrapper.active {
+        display: block;
+        animation: cornerPop 0.15s cubic-bezier(0, 0, 0.2, 1);
+      }
+      @keyframes cornerPop {
+        0% {
+          opacity: 0;
+          transform: scale(0.8) translateY(20px);
+        }
+        100% {
+          opacity: 1;
+          transform: scale(1) translateY(0);
+        }
+      }
+
+      .input-area {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      input[type="text"] {
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid var(--phosphor-main);
+        color: var(--phosphor-main);
+        font-family: inherit;
+        font-size: 18px;
+        width: 100%;
+        outline: none;
+        padding: 5px 0;
+        font-weight: bold;
+        caret-color: var(--phosphor-main);
+      }
+      input::placeholder {
+        color: var(--phosphor-dim);
+        opacity: 0.6;
+      }
+
+      .btn-group {
+        display: flex;
+        gap: 20px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .group-label {
+        font-size: 14px;
+        opacity: 0.9;
+        width: 60px;
+        font-weight: bold;
+      }
+
+      .toggle-btn {
+        padding: 4px 12px;
+        border: 1px solid var(--phosphor-dim);
+        opacity: 0.8;
+        transition: 0s;
+        text-align: center;
+        min-width: 45px;
+        font-weight: bold;
+      }
+      .toggle-btn:hover,
+      .toggle-btn.active {
+        background-color: var(--phosphor-main);
+        border-color: var(--phosphor-main);
+        color: #000;
+        opacity: 1;
+        text-shadow: none;
+      }
+
+      .add-btn {
+        text-align: left;
+        margin-top: 10px;
+        padding: 10px;
+        text-transform: uppercase;
+        font-size: 16px;
+        border: 2px solid transparent;
+        font-weight: bold;
+      }
+      .add-btn:hover {
+        background-color: var(--phosphor-main);
+        border-color: var(--phosphor-main);
+        color: #000;
+        text-shadow: none;
+      }
+
+      ul {
+        list-style: none;
+        padding: 0;
+        margin-top: 30px;
+        border: 1px solid var(--phosphor-dim);
+      }
+      li {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 15px;
+        border-bottom: 1px solid rgba(26, 128, 26, 0.3);
+        transition: 0s;
+      }
+      li:last-child {
+        border-bottom: none;
+      }
+
+      li:hover {
+        background-color: var(--phosphor-main);
+        color: #000;
+        text-shadow: none;
+        font-weight: bold;
+      }
+      li:hover .tag,
+      li:hover .del-btn,
+      li:hover .play-btn {
+        color: #000;
+      }
+      li.done {
+        opacity: 0.5;
+        text-decoration: line-through;
+      }
+
+      .task-left {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        flex: 1;
+      }
+      .arrow-icon {
+        opacity: 0.5;
+        font-weight: bold;
+      }
+      li:hover .arrow-icon {
+        opacity: 1;
+      }
+
+      .meta {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+      }
+      .tag {
+        border: none;
+        padding: 0;
+        font-size: 14px;
+        min-width: 35px;
+        text-align: center;
+        font-weight: bold;
+      }
+      .del-btn,
+      .play-btn {
+        border: none;
+        background: none;
+        color: var(--phosphor-dim);
+        font-family: inherit;
+        font-weight: bold;
+        font-size: 18px;
+        padding: 0 5px;
+        cursor: pointer;
+      }
+      .play-btn {
+        font-size: 14px;
+        padding: 0;
+      }
+
+      .expired-tag {
+        color: var(--phosphor-alert);
+        animation: pulse 1s infinite;
+      }
+      li:hover .expired-tag {
+        color: #500;
+      }
+      @keyframes pulse {
+        50% {
+          opacity: 0.5;
+        }
+      }
+
+      .footer-text {
+        position: fixed;
+        bottom: 32px;
+        font-size: 13px;
+        letter-spacing: 1px;
+        z-index: 100;
+        opacity: 0.8;
+        pointer-events: none;
+        font-family: "Zen Kaku Gothic New", sans-serif;
+        font-weight: bold;
+      }
+      .footer-left {
+        left: 32px;
+      }
+      .footer-right {
+        right: 32px;
+        text-align: right;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="crt-overlay"></div>
+    <div class="window-drag-area"></div>
+
+    <div class="container">
+      <div class="header">
+        <h1>主権統御院・中枢管理システム</h1>
+      </div>
+      <div class="quote-box" id="status-box">System Initializing...</div>
+
+      <div id="console-wrapper">
+        <div class="input-area">
+          <div style="display: flex; align-items: center">
+            <span
+              style="margin-right: 10px; font-weight: bold; font-size: 1.5em"
+              >></span
+            >
+            <input
+              type="text"
+              id="inp"
+              placeholder="ENTER COMMAND"
+              autocomplete="off"
+            />
+          </div>
+
+          <div class="btn-group" id="prio-group">
+            <span class="group-label">PRIO:</span>
+            <div class="toggle-btn" onclick="setPrio(1)">*</div>
+            <div class="toggle-btn" onclick="setPrio(2)">**</div>
+            <div class="toggle-btn active" onclick="setPrio(3)">***</div>
+          </div>
+          <div class="btn-group" id="time-group">
+            <span class="group-label">EST:</span>
+            <div class="toggle-btn active" onclick="setTime(1)">1H</div>
+            <div class="toggle-btn" onclick="setTime(2)">2H</div>
+            <div class="toggle-btn" onclick="setTime(3)">3H</div>
+          </div>
+          <div class="add-btn" id="add-btn">[ EXECUTE ENTRY ]</div>
+        </div>
+      </div>
+
+      <ul id="list"></ul>
+    </div>
+
+    <div class="footer-text footer-left">タスク追加 Shift + =</div>
+    <div class="footer-text footer-right">GYO産経連盟オンライン 2025</div>
+
+    <script>
+      // --- 🔊 Sound System (Audio API) ---
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const gainNode = audioCtx.createGain();
+      gainNode.gain.value = 0.1; // 音量 (0.1 = 10%)
+      gainNode.connect(audioCtx.destination);
+
+      // 播放频率音
+      function playTone(freq, type, duration, slideTo = null) {
+        if (audioCtx.state === "suspended") audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        if (slideTo) {
+          osc.frequency.exponentialRampToValueAtTime(
+            slideTo,
+            audioCtx.currentTime + duration
+          );
+        }
+        osc.connect(gainNode);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      }
+
+      const SFX = {
+        // 打字声：极短的随机高频点击
+        type: () => {
+          const freq = 800 + Math.random() * 200;
+          playTone(freq, "square", 0.03);
+        },
+        // 确认音：双音
+        success: () => {
+          playTone(880, "sine", 0.1);
+          setTimeout(() => playTone(1760, "sine", 0.2), 100);
+        },
+        // 打开控制台：科技感扫频
+        open: () => playTone(200, "sawtooth", 0.15, 600),
+        // 关闭/删除：低频
+        close: () => playTone(400, "triangle", 0.1, 100),
+        // 警报：倒计时结束
+        alarm: () => {
+          playTone(100, "square", 0.2);
+          setTimeout(() => playTone(100, "square", 0.2), 300);
+        },
+      };
+
+      // --- 业务逻辑 ---
+      let todos = [];
+      try {
+        const saved = localStorage.getItem("gyo-os-todos");
+        if (saved) {
+          todos = JSON.parse(saved);
+          todos.forEach((t) => {
+            if (typeof t.remaining === "undefined") {
+              t.remaining = t.hours * 3600;
+              t.isRunning = false;
+            }
+          });
+        }
+      } catch (err) {
+        localStorage.removeItem("gyo-os-todos");
+        todos = [];
+      }
+
+      let curPrio = 3;
+      let curTime = 1;
+      let isConsoleOpen = false;
+      const inp = document.getElementById("inp");
+      const statusBox = document.getElementById("status-box");
+      const consoleWrapper = document.getElementById("console-wrapper");
+      const list = document.getElementById("list");
+
+      // 绑定打字音效
+      inp.addEventListener("input", () => SFX.type());
+
+      // 倒计时引擎
+      setInterval(() => {
+        let hasRunning = false;
+        let needsRender = false;
+        todos.forEach((t) => {
+          if (t.isRunning && !t.done) {
+            hasRunning = true;
+            if (t.remaining > 0) {
+              t.remaining--;
+              needsRender = true;
+            } else {
+              t.isRunning = false;
+              t.remaining = -1;
+              SFX.alarm(); // 播放警报
+              needsRender = true;
+            }
+          }
+        });
+        if (hasRunning || needsRender) {
+          save();
+          render();
+        }
+      }, 1000);
+
+      document.addEventListener("keydown", (e) => {
+        if (
+          e.key === "+" ||
+          (e.shiftKey && (e.key === "=" || e.code === "Equal"))
+        ) {
+          e.preventDefault();
+          toggleConsole();
+        }
+      });
+
+      function toggleConsole() {
+        isConsoleOpen = !isConsoleOpen;
+        if (isConsoleOpen) {
+          SFX.open(); // 音效
+          consoleWrapper.classList.add("active");
+          setTimeout(() => inp.focus(), 50);
+        } else {
+          SFX.close(); // 音效
+          consoleWrapper.classList.remove("active");
+          inp.blur();
+        }
+      }
+
+      function setPrio(val) {
+        SFX.type();
+        curPrio = val;
+        updateUI("prio-group", val);
+      }
+      function setTime(val) {
+        SFX.type();
+        curTime = val;
+        updateUI("time-group", val);
+      }
+      function updateUI(id, val) {
+        document.querySelectorAll(`#${id} .toggle-btn`).forEach((btn, i) => {
+          if (i + 1 === val) btn.classList.add("active");
+          else btn.classList.remove("active");
+        });
+      }
+
+      function formatTime(seconds) {
+        if (seconds < 0) return "期限切れ";
+        const h = Math.floor(seconds / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        const s = seconds % 60;
+        const mStr = m.toString().padStart(2, "0");
+        const sStr = s.toString().padStart(2, "0");
+        if (h > 0) return `${h}:${mStr}:${sStr}`;
+        return `${mStr}:${sStr}`;
+      }
+
+      function save() {
+        localStorage.setItem("gyo-os-todos", JSON.stringify(todos));
+      }
+
+      function render() {
+        list.innerHTML = "";
+        if (!Array.isArray(todos)) todos = [];
+        todos.sort((a, b) => {
+          if (a.done !== b.done) return a.done - b.done;
+          if (a.isRunning !== b.isRunning) return b.isRunning - a.isRunning;
+          return b.prio - a.prio;
+        });
+
+        todos.forEach((t, i) => {
+          const li = document.createElement("li");
+          if (t.done) li.classList.add("done");
+          const stars = "*".repeat(t.prio);
+
+          let timeDisplay = t.hours + "H";
+          let isExpired = false;
+
+          if (t.remaining === -1) {
+            timeDisplay = "期限切れ";
+            isExpired = true;
+          } else if (t.isRunning || t.remaining < t.hours * 3600) {
+            timeDisplay = formatTime(t.remaining);
+          }
+
+          let playBtnHtml = "";
+          if (!isExpired && !t.done) {
+            const playIcon = t.isRunning ? "||" : "▶";
+            playBtnHtml = `<button class="play-btn" onclick="toggleTimer(event, ${i})">${playIcon}</button>`;
+          } else {
+            playBtnHtml = `<span style="width:20px; display:inline-block;"></span>`;
+          }
+
+          const tagClass = isExpired ? "tag expired-tag" : "tag";
+
+          li.innerHTML = `
+                <div class="task-left" onclick="toggle(${i})">
+                    <span class="arrow-icon">></span> <span>${t.text}</span>
+                </div>
+                <div class="meta">
+                    <span class="tag">${stars}</span>
+                    ${playBtnHtml}
+                    <span class="${tagClass}" style="min-width: 60px;">${timeDisplay}</span>
+                    <button class="del-btn" onclick="rem(event, ${i})">X</button>
+                </div>
+            `;
+          list.appendChild(li);
+        });
+
+        const left = todos.filter((t) => !t.done).length;
+        const running = todos.filter((t) => t.isRunning).length;
+        statusBox.innerText =
+          running > 0
+            ? `TASKS RUNNING: ${running} // PENDING: ${left}`
+            : `CENTRAL NEXUS ONLINE // STANDBY`;
+      }
+
+      document.getElementById("add-btn").onclick = () => {
+        if (!inp.value.trim()) return;
+        SFX.success(); // 提交音效
+        todos.push({
+          text: inp.value,
+          prio: curPrio,
+          hours: curTime,
+          done: false,
+          isRunning: false,
+          remaining: curTime * 3600,
+        });
+        inp.value = "";
+        save();
+        render();
+        inp.focus();
+      };
+
+      inp.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") document.getElementById("add-btn").click();
+      });
+
+      window.toggle = (i) => {
+        SFX.success(); // 完成音效
+        todos[i].done = !todos[i].done;
+        save();
+        render();
+      };
+
+      window.rem = (e, i) => {
+        e.stopPropagation();
+        SFX.close(); // 删除音效
+        todos.splice(i, 1);
+        save();
+        render();
+      };
+
+      window.toggleTimer = (e, i) => {
+        e.stopPropagation();
+        if (todos[i].done || todos[i].remaining === -1) return;
+        SFX.type(); // 播放音效
+        todos[i].isRunning = !todos[i].isRunning;
+        save();
+        render();
+      };
+
+      render();
+      if ("serviceWorker" in navigator)
+        navigator.serviceWorker.register("./sw.js");
+    </script>
+  </body>
+</html>

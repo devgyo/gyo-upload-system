@@ -39,3 +39,33 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Next.js build output
+.next/
+out/
+@next/
+next/
+
+# Node
+node_modules/
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# macOS
+.DS_Store
+
+# Optional logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Cache
+.cache/
+temp/
+tmp/
+
+# Upload cache if exists
+public/uploads

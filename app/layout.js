@@ -1,4 +1,5 @@
 import "./globals.css";
+import NavBar from "./NavBar";
 
 export const metadata = {
   title: "GYO UPLOAD SYSTEM",
@@ -20,7 +21,10 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <NavBar />
+        {children}
+      </body>
     </html>
   );
 }
